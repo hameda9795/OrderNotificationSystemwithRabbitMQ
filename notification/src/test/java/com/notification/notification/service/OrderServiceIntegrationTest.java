@@ -88,10 +88,10 @@ class OrderServiceIntegrationTest {
 
 		// Then
 		assertThat(response).isNotNull();
-		assertThat(response.getId()).isNotNull();
-		assertThat(response.getUserId()).isEqualTo(userId);
-		assertThat(response.getStatus()).isEqualTo(OrderStatus.CREATED);
-		assertThat(response.getCreatedAt()).isNotNull();
+		assertThat(response.id()).isNotNull();
+		assertThat(response.userId()).isEqualTo(userId);
+		assertThat(response.status()).isEqualTo(OrderStatus.CREATED);
+		assertThat(response.createdAt()).isNotNull();
 	}
 
 	@Test
@@ -103,12 +103,12 @@ class OrderServiceIntegrationTest {
 		// When
 		OrderResponseDto response = orderService.createOrder(userId, idempotencyKey);
 
-		// Then - verify database persistence
-		Order savedOrder = orderRepository.findById(response.getId()).orElse(null);
-		assertThat(savedOrder).isNotNull();
-		assertThat(savedOrder.getUserId()).isEqualTo(userId);
-		assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
-		assertThat(savedOrder.getIdempotencyKey()).isEqualTo(idempotencyKey);
+	// Then - verify database persistence
+	Order savedOrder = orderRepository.findById(response.id()).orElse(null);
+	assertThat(savedOrder).isNotNull();
+	assertThat(savedOrder.getUserId()).isEqualTo(userId);
+	assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
+	assertThat(savedOrder.getIdempotencyKey()).isEqualTo(idempotencyKey);
 	}
 
 	@Test
@@ -131,7 +131,7 @@ class OrderServiceIntegrationTest {
 			);
 			
 			assertThat(event.userId()).isEqualTo(userId);
-			assertThat(event.orderId()).isEqualTo(response.getId());
+			assertThat(event.orderId()).isEqualTo(response.id());
 			assertThat(event.status()).isEqualTo(OrderStatus.CREATED);
 		});
 	}
@@ -147,8 +147,8 @@ class OrderServiceIntegrationTest {
 		OrderResponseDto secondResponse = orderService.createOrder(userId, idempotencyKey);
 
 		// Then - should return same order
-		assertThat(firstResponse.getId()).isEqualTo(secondResponse.getId());
-		assertThat(firstResponse.getUserId()).isEqualTo(secondResponse.getUserId());
+		assertThat(firstResponse.id()).isEqualTo(secondResponse.id());
+		assertThat(firstResponse.userId()).isEqualTo(secondResponse.userId());
 
 		// Verify only one order in database
 		List<Order> orders = orderRepository.findAll();
@@ -235,9 +235,9 @@ class OrderServiceIntegrationTest {
 		OrderResponseDto order2 = orderService.createOrder(user2, key2);
 
 		// Then
-		assertThat(order1.getId()).isNotEqualTo(order2.getId());
-		assertThat(order1.getUserId()).isEqualTo(user1);
-		assertThat(order2.getUserId()).isEqualTo(user2);
+		assertThat(order1.id()).isNotEqualTo(order2.id());
+		assertThat(order1.userId()).isEqualTo(user1);
+		assertThat(order2.userId()).isEqualTo(user2);
 
 		List<Order> orders = orderRepository.findAll();
 		assertThat(orders).hasSize(2);
@@ -255,9 +255,9 @@ class OrderServiceIntegrationTest {
 		OrderResponseDto order2 = orderService.createOrder(userId, key2);
 
 		// Then
-		assertThat(order1.getId()).isNotEqualTo(order2.getId());
-		assertThat(order1.getUserId()).isEqualTo(userId);
-		assertThat(order2.getUserId()).isEqualTo(userId);
+		assertThat(order1.id()).isNotEqualTo(order2.id());
+		assertThat(order1.userId()).isEqualTo(userId);
+		assertThat(order2.userId()).isEqualTo(userId);
 
 		List<Order> orders = orderRepository.findAll();
 		assertThat(orders).hasSize(2);
@@ -324,7 +324,7 @@ class OrderServiceIntegrationTest {
 		OrderResponseDto response = orderService.createOrder(userId, idempotencyKey);
 
 		// Then - verify database and message queue consistency
-		Order dbOrder = orderRepository.findById(response.getId()).orElse(null);
+		Order dbOrder = orderRepository.findById(response.id()).orElse(null);
 		assertThat(dbOrder).isNotNull();
 
 		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -336,10 +336,10 @@ class OrderServiceIntegrationTest {
 				OrderCreatedEvent.class
 			);
 			
-			// Verify event data matches database record
-			assertThat(event.orderId()).isEqualTo(dbOrder.getId());
-			assertThat(event.userId()).isEqualTo(dbOrder.getUserId());
-			assertThat(event.status()).isEqualTo(dbOrder.getStatus());
+		// Verify event data matches database record
+		assertThat(event.orderId()).isEqualTo(dbOrder.getId());
+		assertThat(event.userId()).isEqualTo(dbOrder.getUserId());
+		assertThat(event.status()).isEqualTo(dbOrder.getStatus());
 		});
 	}
 }

@@ -226,7 +226,7 @@ public class RabbitMQConfig {
         factory.getRabbitConnectionFactory().setNetworkRecoveryInterval(10000);
 
         // Set connection name for monitoring
-        factory.getRabbitConnectionFactory().setConnectionName("notification-service");
+        factory.setConnectionNameStrategy(cf -> "notification-service");
 
         log.info("RabbitMQ connection factory configured for host: {}, port: {}", host, port);
         return factory;
@@ -262,8 +262,56 @@ public class RabbitMQConfig {
 @Profile("test")
 class TestRabbitMQConfig {
 
+    @Value("${app.rabbitmq.order-queue-name:order-queue-test}")
+    private String orderQueueName;
+
+    @Value("${app.rabbitmq.order-exchange-name:order.exchange.test}")
+    private String orderExchangeName;
+
+    @Value("${app.rabbitmq.order-routing-key:order.created.test}")
+    private String orderRoutingKey;
+
+    @Value("${app.rabbitmq.dlx-name:order.dlx.test}")
+    private String deadLetterExchange;
+
+    @Value("${app.rabbitmq.dlq-name:order-queue.dlq.test}")
+    private String deadLetterQueue;
+
     @Bean
     public Queue orderQueue() {
-        return new Queue("test-order-queue", false);
+        return QueueBuilder.durable(orderQueueName)
+            .withArgument("x-dead-letter-exchange", deadLetterExchange)
+            .withArgument("x-dead-letter-routing-key", "order.dead")
+            .build();
+    }
+
+    @Bean
+    public Queue deadLetterQueue() {
+        return QueueBuilder.durable(deadLetterQueue).build();
+    }
+
+    @Bean
+    public TopicExchange orderExchange() {
+        return new TopicExchange(orderExchangeName, true, false);
+    }
+
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(deadLetterExchange, true, false);
+    }
+
+    @Bean
+    public Binding orderBinding(Queue orderQueue, TopicExchange orderExchange) {
+        return BindingBuilder.bind(orderQueue).to(orderExchange).with(orderRoutingKey);
+    }
+
+    @Bean
+    public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange) {
+        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with("order.dead");
+    }
+
+    @Bean
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 }

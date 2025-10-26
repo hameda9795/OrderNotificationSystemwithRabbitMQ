@@ -64,6 +64,19 @@
 		<artifactId>spring-retry</artifactId>
 	</dependency>
 
+	<!-- Google Guava for RateLimiter -->
+	<dependency>
+		<groupId>com.google.guava</groupId>
+		<artifactId>guava</artifactId>
+		<version>33.0.0-jre</version>
+	</dependency>
+
+	<!-- Spring Security -->
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-security</artifactId>
+	</dependency>
+
 	<dependency>
 		<groupId>com.h2database</groupId>
 		<artifactId>h2</artifactId>

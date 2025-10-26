@@ -234,7 +234,7 @@ class NotificationApplicationTests {
 		
 		// Then - duplicate creation with same key should be handled gracefully (idempotency)
 		OrderResponseDto secondOrder = orderService.createOrder(userId, idempotencyKey);
-		assertThat(secondOrder.getId()).isEqualTo(firstOrder.getId());
+		assertThat(secondOrder.id()).isEqualTo(firstOrder.id());
 		
 		// Verify only one order exists
 		assertThat(orderRepository.count()).isEqualTo(1);
@@ -358,15 +358,13 @@ class NotificationApplicationTests {
 
 		// Then - verify database persistence
 		assertThat(response).isNotNull();
-		assertThat(response.getUserId()).isEqualTo(userId);
-		assertThat(response.getStatus()).isEqualTo(OrderStatus.CREATED);
+		assertThat(response.userId()).isEqualTo(userId);
+		assertThat(response.status()).isEqualTo(OrderStatus.CREATED);
 
-		// Verify order is in database
-		Order savedOrder = orderRepository.findById(response.getId()).orElse(null);
-		assertThat(savedOrder).isNotNull();
-		assertThat(savedOrder.getUserId()).isEqualTo(userId);
-
-		// Verify RabbitMQ message was published
+	// Verify order is in database
+	Order savedOrder = orderRepository.findById(response.id()).orElse(null);
+	assertThat(savedOrder).isNotNull();
+	assertThat(savedOrder.getUserId()).isEqualTo(userId);		// Verify RabbitMQ message was published
 		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
 			Message message = rabbitTemplate.receive(orderQueueName, 1000);
 			assertThat(message).isNotNull();
@@ -376,7 +374,7 @@ class NotificationApplicationTests {
 				OrderCreatedEvent.class
 			);
 			assertThat(event.userId()).isEqualTo(userId);
-			assertThat(event.orderId()).isEqualTo(response.getId());
+			assertThat(event.orderId()).isEqualTo(response.id());
 			assertThat(event.status()).isEqualTo(OrderStatus.CREATED);
 		});
 	}
@@ -395,8 +393,8 @@ class NotificationApplicationTests {
 		OrderResponseDto secondResponse = orderService.createOrder(userId, idempotencyKey);
 
 		// Then - should return same order
-		assertThat(firstResponse.getId()).isEqualTo(secondResponse.getId());
-		assertThat(firstResponse.getStatus()).isEqualTo(secondResponse.getStatus());
+		assertThat(firstResponse.id()).isEqualTo(secondResponse.id());
+		assertThat(firstResponse.status()).isEqualTo(secondResponse.status());
 
 		// Verify only one order in database
 		long orderCount = orderRepository.count();
@@ -534,7 +532,7 @@ class NotificationApplicationTests {
 		assertThat(response).isNotNull();
 		
 		// 1. Order saved to database
-		assertThat(orderRepository.findById(response.getId())).isPresent();
+		assertThat(orderRepository.findById(response.id())).isPresent();
 		
 		// 2. Event published to RabbitMQ
 		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -544,7 +542,7 @@ class NotificationApplicationTests {
 		
 		// 3. Idempotency works on retry
 		OrderResponseDto retryResponse = orderService.createOrder(userId, idempotencyKey);
-		assertThat(retryResponse.getId()).isEqualTo(response.getId());
+		assertThat(retryResponse.id()).isEqualTo(response.id());
 	}
 
 	/**

@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class AsyncConfig implements AsyncConfigurer {
 
-    private static final Logger logger = LoggerFactory.getLogger(AsyncConfig.java);
+    private static final Logger logger = LoggerFactory.getLogger(AsyncConfig.class);
 
     /**
      * Configures the async task executor with appropriate thread pool settings.
