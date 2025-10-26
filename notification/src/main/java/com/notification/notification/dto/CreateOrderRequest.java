@@ -1,5 +1,6 @@
 package com.notification.notification.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -12,11 +13,15 @@ public class CreateOrderRequest {
     @Positive(message = "User ID must be positive")
     private Long userId;
 
+    @NotBlank(message = "Idempotency key cannot be blank")
+    private String idempotencyKey;
+
     public CreateOrderRequest() {
     }
 
-    public CreateOrderRequest(Long userId) {
+    public CreateOrderRequest(Long userId, String idempotencyKey) {
         this.userId = userId;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Long getUserId() {
@@ -25,5 +30,13 @@ public class CreateOrderRequest {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

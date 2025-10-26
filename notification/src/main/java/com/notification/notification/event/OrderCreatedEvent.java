@@ -17,6 +17,8 @@ public record OrderCreatedEvent(
     LocalDateTime createdAt
 ) implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Compact constructor with validation.
      */

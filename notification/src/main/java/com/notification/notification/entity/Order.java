@@ -2,6 +2,7 @@ package com.notification.notification.entity;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 import com.notification.notification.enums.OrderStatus;
 import jakarta.persistence.*;
@@ -42,6 +43,9 @@ public class Order {
     @Column(unique = true, nullable = false, length = 100)
     private String orderNumber;
 
+    @Column(unique = true, nullable = false, length = 255)
+    private String idempotencyKey;
+
     /**
      * Default constructor for JPA.
      */
@@ -60,11 +64,24 @@ public class Order {
     }
 
     /**
-     * Generates a unique order number.
+     * Constructor with required fields including idempotency key.
+     * @param userId The ID of the user who created the order
+     * @param status The initial status of the order
+     * @param idempotencyKey The idempotency key to prevent duplicate orders
+     */
+    public Order(Long userId, OrderStatus status, String idempotencyKey) {
+        this.userId = Objects.requireNonNull(userId, "User ID cannot be null");
+        this.status = Objects.requireNonNull(status, "Status cannot be null");
+        this.idempotencyKey = Objects.requireNonNull(idempotencyKey, "Idempotency key cannot be null");
+        this.orderNumber = generateOrderNumber();
+    }
+
+    /**
+     * Generates a unique order number using UUID.
      * @return A unique order number
      */
     private String generateOrderNumber() {
-        return "ORD-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 1000);
+        return "ORD-" + UUID.randomUUID().toString();
     }
 
     /**
@@ -122,6 +139,14 @@ public class Order {
 
     public void setOrderNumber(String orderNumber) {
         this.orderNumber = orderNumber;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     @Override

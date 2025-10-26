@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.notification.notification.entity.Order;
 import com.notification.notification.service.OrderService;
 
 /**
@@ -31,8 +30,9 @@ public class OrderController {
 
     /**
      * Creates a new order.
+     * Implements idempotency using the idempotency key from the request.
      * 
-     * @param request The order creation request containing user ID
+     * @param request The order creation request containing user ID and idempotency key
      * @return Response containing the created order details with 201 status
      */
     @PostMapping(
@@ -42,31 +42,17 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     @Timed(value = "order.creation.time", description = "Time taken to create an order")
     public ResponseEntity<OrderResponseDto> createOrder(@RequestBody @Valid CreateOrderRequest request) {
-        logger.info("Received request to create order for user {}", request.getUserId());
+        logger.info("Received request to create order for user {} with idempotency key {}", 
+            request.getUserId(), request.getIdempotencyKey());
         
-        try {
-            Order order = orderService.createOrder(request.getUserId());
-            
-            OrderResponseDto response = new OrderResponseDto(
-                order.getId(),
-                order.getUserId(),
-                order.getStatus(),
-                order.getCreatedAt()
-            );
-            
-            logger.info("Order created successfully: {}", order.getOrderNumber());
-            
-            return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-                
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid request for creating order: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error creating order for user {}", request.getUserId(), e);
-            throw new RuntimeException("Failed to create order", e);
-        }
+        // Service returns DTO directly - no entity exposure
+        OrderResponseDto response = orderService.createOrder(request.getUserId(), request.getIdempotencyKey());
+        
+        logger.info("Order created successfully with ID: {}", response.getId());
+        
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(response);
     }
 }
 

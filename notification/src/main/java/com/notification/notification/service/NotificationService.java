@@ -51,7 +51,7 @@ public class NotificationService {
         Timer.Sample sample = Timer.start(meterRegistry);
         
         try {
-            logger.info("Sending email notification to user {} with message: {}", userId, message);
+            logger.info("Sending email notification to user {} with message length: {}", userId, message.length());
             
             // Simulate email sending (replace with actual email service integration)
             // In production, this would call an email service like SendGrid, AWS SES, etc.

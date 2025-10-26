@@ -1,5 +1,7 @@
 package com.notification.notification.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -22,6 +24,8 @@ import org.springframework.retry.support.RetryTemplate;
 @Configuration
 @Profile("!test")
 public class RabbitMQConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(RabbitMQConfig.class);
 
     @Value("${app.rabbitmq.order-queue-name:order-queue}")
     private String orderQueueName;
@@ -46,7 +50,7 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(orderQueueName)
             .withArgument("x-dead-letter-exchange", deadLetterExchange)
             .withArgument("x-dead-letter-routing-key", "order.dead")
-            .withArgument("x-message-ttl", 3600000) // 1 hour
+            // TTL removed to match existing queue configuration
             .build();
     }
 
@@ -105,7 +109,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * RabbitTemplate with retry configuration.
+     * RabbitTemplate with retry configuration and error handling callbacks.
      */
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
@@ -113,6 +117,19 @@ public class RabbitMQConfig {
         template.setMessageConverter(jsonMessageConverter());
         template.setRetryTemplate(retryTemplate());
         template.setMandatory(true);
+        
+        // Confirm callback for publisher confirms
+        template.setConfirmCallback((correlationData, ack, cause) -> {
+            if (!ack) {
+                log.error("Message failed to deliver: {}", cause);
+            }
+        });
+        
+        // Returns callback for unroutable messages
+        template.setReturnsCallback(returned -> {
+            log.error("Message returned: {}", returned.getReplyText());
+        });
+        
         return template;
     }
 
@@ -139,14 +156,14 @@ public class RabbitMQConfig {
     }
 
     /**
-     * Connection factory with proper configuration.
+     * Connection factory with proper configuration and publisher confirms enabled.
      */
     @Bean
     public ConnectionFactory connectionFactory(
         @Value("${spring.rabbitmq.host:localhost}") String host,
         @Value("${spring.rabbitmq.port:5672}") int port,
-        @Value("${spring.rabbitmq.username:guest}") String username,
-        @Value("${spring.rabbitmq.password:guest}") String password
+        @Value("${spring.rabbitmq.username}") String username,
+        @Value("${spring.rabbitmq.password}") String password
     ) {
         CachingConnectionFactory factory = new CachingConnectionFactory(host, port);
         factory.setUsername(username);
@@ -154,11 +171,13 @@ public class RabbitMQConfig {
         factory.setChannelCacheSize(25);
         factory.setConnectionTimeout(5000);
         factory.setRequestedHeartBeat(30);
+        factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
+        factory.setPublisherReturns(true);
         return factory;
     }
 
     /**
-     * Listener container factory with error handling.
+     * Listener container factory with error handling and retry configuration.
      */
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
@@ -169,6 +188,12 @@ public class RabbitMQConfig {
         factory.setMaxConcurrentConsumers(10);
         factory.setPrefetchCount(10);
         factory.setDefaultRequeueRejected(false);
+        
+        // Error handler for listener exceptions
+        factory.setErrorHandler(t -> {
+            log.error("Error in message listener: {}", t.getMessage(), t);
+        });
+        
         return factory;
     }
 }
