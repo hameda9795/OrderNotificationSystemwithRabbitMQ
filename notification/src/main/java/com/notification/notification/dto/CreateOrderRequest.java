@@ -6,37 +6,26 @@ import jakarta.validation.constraints.Positive;
 
 /**
  * Request DTO for creating a new order.
+ * Immutable record for better thread safety and predictability.
  */
-public class CreateOrderRequest {
-    
+public record CreateOrderRequest(
     @NotNull(message = "User ID cannot be null")
     @Positive(message = "User ID must be positive")
-    private Long userId;
+    Long userId,
 
     @NotBlank(message = "Idempotency key cannot be blank")
-    private String idempotencyKey;
-
-    public CreateOrderRequest() {
-    }
-
-    public CreateOrderRequest(Long userId, String idempotencyKey) {
-        this.userId = userId;
-        this.idempotencyKey = idempotencyKey;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
+    String idempotencyKey
+) {
+    /**
+     * Compact constructor with additional validation.
+     */
+    public CreateOrderRequest {
+        // Additional business validation if needed
+        if (userId != null && userId <= 0) {
+            throw new IllegalArgumentException("User ID must be positive");
+        }
+        if (idempotencyKey != null && idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency key cannot be blank");
+        }
     }
 }

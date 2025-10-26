@@ -1,57 +1,38 @@
 package com.notification.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.notification.notification.enums.OrderStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Positive;
+
 import java.time.LocalDateTime;
 
 /**
  * Response DTO for order information.
+ * Immutable record ensuring thread safety and predictability.
  */
-public class OrderResponseDto {
-    
-    private Long id;
-    private Long userId;
-    private OrderStatus status;
-    private LocalDateTime createdAt;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record OrderResponseDto(
+    @NotNull
+    @Positive
+    @JsonProperty("id")
+    Long id,
 
-    public OrderResponseDto() {
-    }
+    @NotNull
+    @Positive
+    @JsonProperty("user_id")
+    Long userId,
 
-    public OrderResponseDto(Long id, Long userId, OrderStatus status, LocalDateTime createdAt) {
-        this.id = id;
-        this.userId = userId;
-        this.status = status;
-        this.createdAt = createdAt;
-    }
+    @NotNull
+    @JsonProperty("status")
+    OrderStatus status,
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-}
+    @NotNull
+    @PastOrPresent
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonProperty("created_at")
+    LocalDateTime createdAt
+) {}

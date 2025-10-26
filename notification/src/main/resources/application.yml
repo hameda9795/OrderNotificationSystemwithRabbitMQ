@@ -1,0 +1,162 @@
+# Spring Boot Application Configuration for Notification Service
+spring:
+  application:
+    name: notification-service
+
+  # Database Configuration (HikariCP Connection Pool)
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/notifications}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+    # HikariCP Connection Pool Settings
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      pool-name: NotificationHikariPool
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate # Use 'validate' in production, 'update' in dev
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+        format_sql: true
+    show-sql: false
+
+  # RabbitMQ Configuration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
+    # Publisher confirms and returns
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+    # Connection recovery
+    connection-timeout: 5000
+    requested-heartbeat: 30
+
+  # Security Configuration
+  security:
+    user:
+      name: ${SECURITY_USER:admin}
+      password: ${SECURITY_PASSWORD:admin123}
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful # Enable graceful shutdown
+
+  # Compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# Spring Lifecycle
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+# Management & Monitoring (Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,info
+      base-path: /actuator
+
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+  # Metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:development}
+
+  # Health indicators
+  health:
+    rabbit:
+      enabled: true
+    db:
+      enabled: true
+
+# Application-specific Configuration
+app:
+  rabbitmq:
+    order-queue-name: ${ORDER_QUEUE_NAME:order-queue}
+    order-exchange-name: ${ORDER_EXCHANGE_NAME:order.exchange}
+    order-routing-key: ${ORDER_ROUTING_KEY:order.created}
+    dlx-name: ${DLX_NAME:order.dlx}
+    dlq-name: ${DLQ_NAME:order-queue.dlq}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.notification.notification: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.amqp: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    root: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.notification.notification: INFO
+
+management:
+  endpoint:
+    health:
+      show-details: never

@@ -16,7 +16,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * Uses JPA auditing for automatic tracking of creation and modification timestamps.
  */
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", indexes = {
+    @Index(name = "idx_order_user_id", columnList = "userId"),
+    @Index(name = "idx_order_status", columnList = "status"),
+    @Index(name = "idx_order_created_at", columnList = "createdAt"),
+    @Index(name = "idx_order_user_status", columnList = "userId, status"),
+    @Index(name = "idx_order_number", columnList = "orderNumber", unique = true),
+    @Index(name = "idx_idempotency_key", columnList = "idempotencyKey", unique = true)
+})
 @EntityListeners(AuditingEntityListener.class)
 public class Order {
 
@@ -106,7 +113,7 @@ public class Order {
     }
 
     public void setUserId(Long userId) {
-        this.userId = userId;
+        this.userId = Objects.requireNonNull(userId, "User ID cannot be null");
     }
 
     public OrderStatus getStatus() {
@@ -114,7 +121,7 @@ public class Order {
     }
 
     public void setStatus(OrderStatus status) {
-        this.status = status;
+        this.status = Objects.requireNonNull(status, "Status cannot be null");
     }
 
     public LocalDateTime getCreatedAt() {
@@ -138,6 +145,9 @@ public class Order {
     }
 
     public void setOrderNumber(String orderNumber) {
+        if (orderNumber != null && !orderNumber.matches("^ORD-[a-fA-F0-9-]{36}$")) {
+            throw new IllegalArgumentException("Invalid order number format. Expected: ORD-{UUID}");
+        }
         this.orderNumber = orderNumber;
     }
 
@@ -146,7 +156,7 @@ public class Order {
     }
 
     public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
+        this.idempotencyKey = Objects.requireNonNull(idempotencyKey, "Idempotency key cannot be null");
     }
 
     @Override
@@ -154,7 +164,9 @@ public class Order {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Order order = (Order) o;
-        return Objects.equals(id, order.id) && Objects.equals(orderNumber, order.orderNumber);
+        // Use orderNumber primarily, fall back to id if both are persisted
+        return Objects.equals(orderNumber, order.orderNumber) ||
+               (Objects.equals(id, order.id) && id != null);
     }
 
     @Override
@@ -164,13 +176,12 @@ public class Order {
 
     @Override
     public String toString() {
+        // Exclude userId from toString to prevent accidental logging of sensitive data
         return "Order{" +
                 "id=" + id +
-                ", userId=" + userId +
-                ", status=" + status +
                 ", orderNumber='" + orderNumber + '\'' +
+                ", status=" + status +
                 ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
                 '}';
     }
 }
