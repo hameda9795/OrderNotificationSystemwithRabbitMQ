@@ -1,37 +1,32 @@
 package com.notification.notification;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.config.ConfigDataException;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-
+/**
+ * Notification Service Application
+ *
+ * Provides order notification capabilities with asynchronous processing,
+ * audit logging, and RabbitMQ message queue integration.
+ *
+ * Requirements:
+ * - Database configuration (PostgreSQL/MySQL)
+ * - RabbitMQ message broker
+ * - Required configuration properties in application.yml/properties
+ *
+ * @author Spring Boot Development Team
+ * @version 1.0
+ * @since 2024
+ */
 @EnableAsync
 @EnableJpaAuditing
 @SpringBootApplication
 public class NotificationApplication {
 
-	private static final Logger logger = LoggerFactory.getLogger(NotificationApplication.class);
-
 	public static void main(String[] args) {
-		try {
-			logger.info("Starting Order Notification Application...");
-			SpringApplication.run(NotificationApplication.class, args);
-			logger.info("Order Notification Application started successfully");
-		} catch (ConfigDataException e) {
-			logger.error("Configuration error during startup", e);
-			System.exit(2);
-		} catch (DataAccessException e) {
-			logger.error("Database connection failed during startup", e);
-			System.exit(3);
-		} catch (Exception e) {
-			logger.error("Unexpected error during startup", e);
-			System.exit(1);
-		}
+		SpringApplication.run(NotificationApplication.class, args);
 	}
 
 }
